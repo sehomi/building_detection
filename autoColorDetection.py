@@ -49,6 +49,9 @@ class AutoColorDetector:
         unique, counts = np.unique(labels, return_counts=True)
         for i, unq in enumerate(unique):
 
+            if unq == 0:
+                continue
+                
             if counts[i] > 3*segThresh:
                 new_labels[labels==unq] = unq
                 mask = np.zeros(labels.shape, np.uint8)
@@ -68,7 +71,7 @@ class AutoColorDetector:
 
         for i, seg in enumerate(segs):
             rescaled = rescale_intensity(seg, out_range=(0, 20))
-            glcm = greycomatrix(rescaled, [1], [0, np.pi/4, np.pi/2, 3*np.pi/4], levels=21)
+            glcm = greycomatrix(rescaled.astype(np.uint8), [1], [0, np.pi/4, np.pi/2, 3*np.pi/4], levels=21)
 
             fts[i,0] = greycoprops(glcm, prop='contrast').mean()
             fts[i,1] = greycoprops(glcm, prop='dissimilarity').mean()
@@ -110,7 +113,6 @@ class AutoColorDetector:
 
         area = 0
         thresh = 5
-        mask = []
         labels = None
 
         labels = self.segmentRAG(blur, thresh, mask=mask)

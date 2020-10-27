@@ -9,7 +9,7 @@ from skimage import data, segmentation, color
 from skimage.future import graph
 import os
 import sys
-sys.path.append("/home/hojat/Desktop/buildingDetection")
+sys.path.append("/home/hojat/Desktop/building_detection")
 import autoColorDetection as acd
 
 
@@ -38,26 +38,33 @@ def mouse_click(event, x, y, flags, param):
 def defineWalls(img):
     global user_contour
 
+    imgCopy = img.copy()
+
     cv2.namedWindow("define walls")
     cv2.setMouseCallback("define walls", mouse_click)
 
-    mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8)*255
+    mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)*255
 
     key = ''
     while key != ord('q'):
         if key == ord('d'):
-            cv2.drawContours(img, np.array(user_contour), -1, (0,0,0), thickness=-1)
-            cv2.drawContours(mask, np.array(user_contour), -1, 0, thickness=-1)
+            cv2.drawContours(imgCopy, np.array(user_contour), -1, (0,0,0), thickness=-1)
+            cv2.drawContours(mask, np.array(user_contour), -1, 255, thickness=-1)
 
             user_contour = [[]]
 
-        cv2.imshow("define walls", img)
+        cv2.imshow("define walls", imgCopy)
 
         key = cv2.waitKey(10)
+
+    # mask = cv2.bitwise_not(mask)
+    cv2.imshow("define walls", mask)
+    key = cv2.waitKey()
 
     cv2.destroyAllWindows()
     cv2.waitKey(1)
 
+    return mask
 
 colorDetector = acd.AutoColorDetector()
 
@@ -68,10 +75,10 @@ while True:
         sample = cv2.imread(sample_file_name, cv2.COLOR_BGR2RGB)
         sample = resizeImg(sample)
 
-        defineWalls(sample)
+        mask = defineWalls(sample)
 
         fig, ax = plt.subplots(2)
-        labels = colorDetector.detectBuildingColor(sample)
+        labels = colorDetector.detectBuildingColor(sample, mask=mask)
         if labels.any() != None:
 
             out = color.label2rgb(labels, sample, kind='overlay', bg_label=0)
