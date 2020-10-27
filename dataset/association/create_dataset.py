@@ -57,7 +57,11 @@ def defineWalls(img):
 
         key = cv2.waitKey(10)
 
-    # mask = cv2.bitwise_not(mask)
+    mask = cv2.bitwise_not(mask)
+    mask[0,:] = 0
+    mask[-1,:] = 0
+    mask[:,0] = 0
+    mask[:,-1] = 0
     cv2.imshow("define walls", mask)
     key = cv2.waitKey()
 
