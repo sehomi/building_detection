@@ -2,7 +2,6 @@
 
 import numpy as np
 import skimage
-print(skimage.__version__)
 import cv2 as cv2
 from matplotlib import pyplot as plt
 from skimage import data, segmentation, color
@@ -70,7 +69,32 @@ def defineWalls(img):
 
     return mask
 
+def onclick(event):
+    global ax, clicked1, clicked2
+
+    if event.inaxes == ax[0]:
+        clicked1 = [int(event.xdata), int(event.ydata)]
+    elif event.inaxes == ax[1]:
+        clicked2 = [int(event.xdata), int(event.ydata)]
+
+
+def press(event):
+    global next, data
+
+    if event.key == 'n':
+        next = True
+    elif event.key == 's':
+        np.savetxt("features/data.csv", data, delimiter=",")
+
 colorDetector = acd.AutoColorDetector()
+data = []
+clicked1 = []
+clicked2 = []
+next = False
+
+fig, ax = plt.subplots(2)
+fig.canvas.mpl_connect('button_press_event', onclick)
+fig.canvas.mpl_connect('key_press_event', press)
 
 bld_count = 1
 while True:
@@ -81,8 +105,7 @@ while True:
 
         mask = defineWalls(sample)
 
-        fig, ax = plt.subplots(2)
-        labels = colorDetector.detectBuildingColor(sample, mask=mask)
+        labels, masks1, fts1 = colorDetector.detectBuildingColor(sample, mask=mask)
         if labels.any() != None:
 
             out = color.label2rgb(labels, sample, kind='overlay', bg_label=0)
@@ -98,7 +121,7 @@ while True:
                 current = cv2.imread(current_file_name, cv2.COLOR_BGR2RGB)
                 current = resizeImg(current)
 
-                labels = colorDetector.detectBuildingColor(current)
+                labels, masks2, fts2 = colorDetector.detectBuildingColor(current)
                 if labels.any() != None:
 
                     out = color.label2rgb(labels, current, kind='overlay', bg_label=0)
@@ -107,8 +130,43 @@ while True:
                     ax[1].set_axis_off()
 
                     plt.draw()
-                    plt.pause(1)
 
+                    pairs = []
+                    while not next:
+
+                        clicked1 = []
+                        clicked2 = []
+
+                        while len(clicked1) == 0 or len(clicked2) == 0:
+                            if next:
+                                break
+                            plt.pause(0.1)
+
+                        if len(clicked1) == 0 or len(clicked2) == 0:
+                            continue
+
+                        d1, i1 = colorDetector.getFts(masks1, fts1, clicked1)
+                        d2, i2 = colorDetector.getFts(masks2, fts2, clicked2)
+
+                        if d1 and d2:
+                            trueFts = np.hstack((d1, d2))
+                            data.append( np.hstack( (trueFts,np.array([1])) ))
+                            pairs.append([i1,i2])
+
+
+                    next = False
+
+                    for i in range(len(masks1)):
+                        for j in range(len(masks2)):
+
+                            if [i,j] in pairs or [j,i] in pairs:
+                                continue
+
+                            falseFts = np.hstack((fts1[i], fts2[j]))
+                            data.append( np.hstack( (falseFts,np.array([0])) ))
+                            pairs.append([i,j])
+
+                    print(data)
             else:
                 break
             bld_count1 = bld_count1 + 1

@@ -20,6 +20,7 @@ class AutoColorDetector:
         # self._peakNeighbourhood = peakNeighbourhood
         self.colors = np.int32( list(np.ndindex(2, 2, 2)) ) * 255
 
+
     def cut(self, img, labels, thresh):
         g = graph.rag_mean_color(img, labels)
         labels1 = graph.cut_threshold(labels, g, thresh)
@@ -51,7 +52,7 @@ class AutoColorDetector:
 
             if unq == 0:
                 continue
-                
+
             if counts[i] > 3*segThresh:
                 new_labels[labels==unq] = unq
                 mask = np.zeros(labels.shape, np.uint8)
@@ -128,4 +129,21 @@ class AutoColorDetector:
         labels = self.cut(image, labels, 8)
         labels = self.cut(image, labels, 12)
 
-        return labels
+        return labels, masks, fts
+
+    def segmentIdx(self, masks, p):
+
+        idx = None
+        for i, mask in enumerate(masks):
+            if mask[p[1], p[0]] != 0:
+                idx = i
+        return idx
+
+    def getFts(self, masks, fts, p):
+
+        idx = self.segmentIdx(masks, p)
+
+        if idx:
+            return fts[idx], idx
+        else:
+            return None, None
