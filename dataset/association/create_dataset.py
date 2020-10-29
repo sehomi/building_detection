@@ -14,17 +14,17 @@ import autoColorDetection as acd
 
 user_contour = [[]]
 
-def resizeImg(img):
+def resizeImg(img, hd, wd):
 
     w = 0
     h = 0
 
     if img.shape[0] > img.shape[1]:
-        h = 240
-        w = int(240. * img.shape[1] / img.shape[0])
+        h = hd
+        w = int(float(hd) * img.shape[1] / img.shape[0])
     else:
-        w = 320
-        h = int(320. * img.shape[0] / img.shape[1])
+        w = wd
+        h = int(float(wd) * img.shape[0] / img.shape[1])
 
     return cv2.resize(img, (w,h))
 
@@ -38,6 +38,7 @@ def defineWalls(img):
     global user_contour
 
     imgCopy = img.copy()
+    imgCopy = resizeImg(imgCopy, 480, 640)
 
     cv2.namedWindow("define walls")
     cv2.setMouseCallback("define walls", mouse_click)
@@ -48,6 +49,8 @@ def defineWalls(img):
     while key != ord('q'):
         if key == ord('d'):
             cv2.drawContours(imgCopy, np.array(user_contour), -1, (0,0,0), thickness=-1)
+            user_contour = [ [[int(cnt[0] * img.shape[1] / imgCopy.shape[1]),
+                             int(cnt[1] * img.shape[0] / imgCopy.shape[0])] for cnt in user_contour[0]] ]
             cv2.drawContours(mask, np.array(user_contour), -1, 255, thickness=-1)
 
             user_contour = [[]]
@@ -61,8 +64,8 @@ def defineWalls(img):
     mask[-1,:] = 0
     mask[:,0] = 0
     mask[:,-1] = 0
-    cv2.imshow("define walls", mask)
-    key = cv2.waitKey()
+    # cv2.imshow("define walls", mask)
+    # key = cv2.waitKey()
 
     cv2.destroyAllWindows()
     cv2.waitKey(1)
@@ -83,7 +86,7 @@ def press(event):
 
     if event.key == 'n':
         next = True
-    elif event.key == 's':
+    elif event.key == 'v':
         np.savetxt("features/data.csv", data, delimiter=",")
 
 colorDetector = acd.AutoColorDetector()
@@ -101,7 +104,7 @@ while True:
     sample_file_name = "raw/bld{:d}_0.jpg".format(bld_count)
     if os.path.isfile(sample_file_name):
         sample = cv2.imread(sample_file_name, cv2.COLOR_BGR2RGB)
-        sample = resizeImg(sample)
+        sample = resizeImg(sample, 240, 320)
 
         mask = defineWalls(sample)
 
@@ -119,7 +122,7 @@ while True:
             current_file_name = "raw/bld{:d}_{:d}.jpg".format(bld_count, bld_count1)
             if os.path.isfile(current_file_name):
                 current = cv2.imread(current_file_name, cv2.COLOR_BGR2RGB)
-                current = resizeImg(current)
+                current = resizeImg(current, 240, 320)
 
                 labels, masks2, fts2 = colorDetector.detectBuildingColor(current)
                 if labels.any() != None:
@@ -148,7 +151,7 @@ while True:
                         d1, i1 = colorDetector.getFts(masks1, fts1, clicked1)
                         d2, i2 = colorDetector.getFts(masks2, fts2, clicked2)
 
-                        if d1 and d2:
+                        if d1 is not None and d2 is not None:
                             trueFts = np.hstack((d1, d2))
                             data.append( np.hstack( (trueFts,np.array([1])) ))
                             pairs.append([i1,i2])
@@ -167,6 +170,7 @@ while True:
                             pairs.append([i,j])
 
                     print(data)
+                    np.savetxt("features/data.csv", data, delimiter=",")
             else:
                 break
             bld_count1 = bld_count1 + 1
@@ -175,3 +179,5 @@ while True:
         break
 
     bld_count = bld_count + 1
+
+np.savetxt("features/data.csv", data, delimiter=",")
