@@ -24,7 +24,7 @@ mpl.rcParams['figure.figsize'] = (12, 10)
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-data = np.loadtxt("dataset/association/features/data1.csv", delimiter=",")
+data = np.loadtxt("dataset/association/features/data2.csv", delimiter=",")
 
 train_data, test_data = train_test_split(data, test_size=0.2)
 train_data, val_data = train_test_split(train_data, test_size=0.2)
@@ -41,7 +41,7 @@ testX = np.array(test_data[:,0:16])
 scaler = StandardScaler()
 trainX = scaler.fit_transform(trainX)
 
-pickle.dump(scaler, open('scaler.pkl','wb'))
+pickle.dump(scaler, open('scaler2.pkl','wb'))
 
 valX = scaler.transform(valX)
 testX = scaler.transform(testX)
@@ -134,7 +134,11 @@ def make_model(metrics = METRICS, output_bias=None):
      output_bias = tf.keras.initializers.Constant(output_bias)
      model = keras.Sequential([
           keras.layers.Dense(
-              32, activation='relu',
+              128, activation='relu',
+              input_shape=(trainX.shape[-1],)),
+          keras.layers.Dropout(0.5),
+          keras.layers.Dense(
+              128, activation='relu',
               input_shape=(trainX.shape[-1],)),
           keras.layers.Dropout(0.5),
           keras.layers.Dense(1, activation='sigmoid',
@@ -143,7 +147,11 @@ def make_model(metrics = METRICS, output_bias=None):
   else:
      model = keras.Sequential([
           keras.layers.Dense(
-              64, activation='relu',
+              128, activation='relu',
+              input_shape=(trainX.shape[-1],)),
+          keras.layers.Dropout(0.5),
+          keras.layers.Dense(
+              128, activation='relu',
               input_shape=(trainX.shape[-1],)),
           keras.layers.Dropout(0.5),
           keras.layers.Dense(1, activation='sigmoid'),
@@ -156,7 +164,7 @@ def make_model(metrics = METRICS, output_bias=None):
 
   return model
 
-EPOCHS = 100
+EPOCHS = 500
 BATCH_SIZE = 1024
 
 early_stopping = tf.keras.callbacks.EarlyStopping(
@@ -172,7 +180,6 @@ total = data.shape[0]
 
 weight_for_0 = (1 / neg)*(total)/2.0
 weight_for_1 = (1 / pos)*(total)/2.0
-
 
 class_weight = {0: weight_for_0, 1: weight_for_1}
 
@@ -198,8 +205,9 @@ baseline_history = model.fit(
     epochs=EPOCHS,
     callbacks = [early_stopping],
     validation_data=(valX, valy),
-    # class_weight=class_weight)
+    # class_weight=class_weight
     )
+
 
 
 # plot_loss(baseline_history, "", 0)
@@ -220,6 +228,6 @@ for name, value in zip(model.metrics_names, baseline_results):
   print(name, ': ', value)
 print()
 
-model.save('model')
+model.save('model2')
 
 plt.show()

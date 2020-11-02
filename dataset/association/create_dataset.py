@@ -104,7 +104,7 @@ while True:
     sample_file_name = "raw/bld{:d}_0.jpg".format(bld_count)
     if os.path.isfile(sample_file_name):
         sample = cv2.imread(sample_file_name, cv2.COLOR_BGR2RGB)
-        sample = resizeImg(sample, 240, 320)
+        sample = resizeImg(sample, 600, 800)
 
         mask = defineWalls(sample)
 
@@ -122,7 +122,7 @@ while True:
             current_file_name = "raw/bld{:d}_{:d}.jpg".format(bld_count, bld_count1)
             if os.path.isfile(current_file_name):
                 current = cv2.imread(current_file_name, cv2.COLOR_BGR2RGB)
-                current = resizeImg(current, 240, 320)
+                current = resizeImg(current, 600, 800)
 
                 labels, masks2, fts2 = colorDetector.detectBuildingColor(current)
                 if labels.any() != None:

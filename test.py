@@ -37,8 +37,8 @@ def predict(x):
 
     return res[0,0] > 0.3
 
-model = keras.models.load_model('model')
-scaler = pickle.load(open('scaler.pkl','rb'))
+model = keras.models.load_model('model2')
+scaler = pickle.load(open('scaler2.pkl','rb'))
 colorDetector = acd.AutoColorDetector()
 
 
@@ -47,7 +47,7 @@ while True:
     sample_file_name = "dataset/association/raw/bld{:d}_0.jpg".format(bld_count)
     if os.path.isfile(sample_file_name):
         sample = cv2.imread(sample_file_name, cv2.COLOR_BGR2RGB)
-        sample = resizeImg(sample, 240, 320)
+        sample = resizeImg(sample, 600, 800)
 
 
         labels1, masks1, fts1 = colorDetector.detectBuildingColor(sample)
@@ -59,12 +59,12 @@ while True:
             current_file_name = "dataset/association/raw/bld{:d}_{:d}.jpg".format(bld_count, bld_count1)
             if os.path.isfile(current_file_name):
                 current = cv2.imread(current_file_name, cv2.COLOR_BGR2RGB)
-                current = resizeImg(current, 240, 320)
+                current = resizeImg(current, 600, 800)
 
                 labels2, masks2, fts2 = colorDetector.detectBuildingColor(current)
 
                 copy = current.copy()
-                copy = cv2.resize(copy, (2*copy.shape[1], 2*copy.shape[0]))
+                # copy = cv2.resize(copy, (2*copy.shape[1], 2*copy.shape[0]))
 
                 for i in range(len(masks1)):
                     for j in range(len(masks2)):
@@ -78,7 +78,7 @@ while True:
 
                             red = np.zeros((masks2[j].shape[0], masks2[j].shape[1], 3), dtype=np.uint8)
                             red[masks2[j] == 255] = (0,0,255)
-                            red = cv2.resize(red, (2*red.shape[1], 2*red.shape[0]))
+                            # red = cv2.resize(red, (2*red.shape[1], 2*red.shape[0]))
                             copy = cv2.addWeighted(copy, 1, red, 0.4, 0.0)
                             # img1 = cv2.bitwise_and(sample,sample,mask = masks1[i])
                             # img2 = cv2.bitwise_and(current,current,mask = masks2[j])
