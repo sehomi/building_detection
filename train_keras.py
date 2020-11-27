@@ -24,7 +24,7 @@ mpl.rcParams['figure.figsize'] = (12, 10)
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-data = np.loadtxt("dataset/association/features/data2.csv", delimiter=",")
+data = np.loadtxt("dataset/association/features/data3.csv", delimiter=",")
 
 train_data, test_data = train_test_split(data, test_size=0.2)
 train_data, val_data = train_test_split(train_data, test_size=0.2)
@@ -41,7 +41,7 @@ testX = np.array(test_data[:,0:16])
 scaler = StandardScaler()
 trainX = scaler.fit_transform(trainX)
 
-pickle.dump(scaler, open('scaler2.pkl','wb'))
+pickle.dump(scaler, open('models/scaler4.pkl','wb'))
 
 valX = scaler.transform(valX)
 testX = scaler.transform(testX)
@@ -96,15 +96,16 @@ def plot_roc(name, labels, predictions, **kwargs):
 
 
 def plot_metrics(history):
-  metrics =  ['loss', 'auc', 'precision', 'recall']
+  metrics =  ['loss', 'accuracy', 'precision', 'recall']
   for n, metric in enumerate(metrics):
     name = metric.replace("_"," ").capitalize()
-    plt.subplot(2,2,n+1)
-    plt.plot(history.epoch,  history.history[metric], color=colors[0], label='Train')
-    plt.plot(history.epoch, history.history['val_'+metric],
+    fig, ax = plt.subplots()
+    fig.set_size_inches(6.0, 5.0)
+    ax.plot(history.epoch,  history.history[metric], color=colors[0], linewidth=2, label='Train')
+    ax.plot(history.epoch, history.history['val_'+metric],
              color=colors[0], linestyle="--", label='Val')
-    plt.xlabel('Epoch')
-    plt.ylabel(name)
+    plt.xlabel('Epoch', fontsize=16)
+    plt.ylabel(name, fontsize=16)
     if metric == 'loss':
       plt.ylim([0, plt.ylim()[1]])
     elif metric == 'auc':
@@ -113,6 +114,7 @@ def plot_metrics(history):
       plt.ylim([0,1])
 
     plt.legend()
+    plt.grid()
 
 def plot_cm(labels, predictions, p=0.5):
   cm = confusion_matrix(labels, predictions > p)
@@ -134,6 +136,10 @@ def make_model(metrics = METRICS, output_bias=None):
      output_bias = tf.keras.initializers.Constant(output_bias)
      model = keras.Sequential([
           keras.layers.Dense(
+              256, activation='relu',
+              input_shape=(trainX.shape[-1],)),
+          keras.layers.Dropout(0.5),
+          keras.layers.Dense(
               128, activation='relu',
               input_shape=(trainX.shape[-1],)),
           keras.layers.Dropout(0.5),
@@ -146,6 +152,10 @@ def make_model(metrics = METRICS, output_bias=None):
       ])
   else:
      model = keras.Sequential([
+          keras.layers.Dense(
+              256, activation='relu',
+              input_shape=(trainX.shape[-1],)),
+          keras.layers.Dropout(0.5),
           keras.layers.Dense(
               128, activation='relu',
               input_shape=(trainX.shape[-1],)),
@@ -228,6 +238,6 @@ for name, value in zip(model.metrics_names, baseline_results):
   print(name, ': ', value)
 print()
 
-model.save('model2')
+model.save('models/model4')
 
 plt.show()

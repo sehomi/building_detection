@@ -35,16 +35,26 @@ def predict(x):
 
     res = model.predict(X)
 
-    return res[0,0] > 0.3
+    return res[0,0] > 0.9
 
-model = keras.models.load_model('model2')
-scaler = pickle.load(open('scaler2.pkl','rb'))
+def showHSV(img, num):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    h,s,v = cv2.split(hsv)
+    cv2.imshow("Split H {:d}".format(num),h)
+    cv2.imshow("Split S {:d}".format(num),s)
+    cv2.imshow("Split V {:d}".format(num),v)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    cv2.imshow("gray {:d}".format(num),gray)
+
+model = keras.models.load_model('models/model3')
+scaler = pickle.load(open('models/scaler3.pkl','rb'))
 colorDetector = acd.AutoColorDetector()
 
+prefix = "test_imgs/"
 
 bld_count = 1
 while True:
-    sample_file_name = "dataset/association/raw/bld{:d}_0.jpg".format(bld_count)
+    sample_file_name = prefix + "bld{:d}_0.jpg".format(bld_count)
     if os.path.isfile(sample_file_name):
         sample = cv2.imread(sample_file_name, cv2.COLOR_BGR2RGB)
         sample = resizeImg(sample, 600, 800)
@@ -56,7 +66,7 @@ while True:
         bld_count1 = 1
         while True:
 
-            current_file_name = "dataset/association/raw/bld{:d}_{:d}.jpg".format(bld_count, bld_count1)
+            current_file_name = prefix + "bld{:d}_{:d}.jpg".format(bld_count, bld_count1)
             if os.path.isfile(current_file_name):
                 current = cv2.imread(current_file_name, cv2.COLOR_BGR2RGB)
                 current = resizeImg(current, 600, 800)
@@ -82,8 +92,13 @@ while True:
                             copy = cv2.addWeighted(copy, 1, red, 0.4, 0.0)
                             # img1 = cv2.bitwise_and(sample,sample,mask = masks1[i])
                             # img2 = cv2.bitwise_and(current,current,mask = masks2[j])
+                            #
                             # cv2.imshow("img1", img1)
                             # cv2.imshow("img2", img2)
+                            #
+                            # showHSV(img1,1)
+                            # showHSV(img2,2)
+                            #
                             # cv2.waitKey()
                 cv2.imshow("sample", sample)
                 cv2.imshow("copy", copy)

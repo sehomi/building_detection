@@ -29,7 +29,7 @@ class AutoColorDetector:
 
     def segmentRAG(self,img, thresh, mask=None):
 
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         labels1 = segmentation.slic(img, compactness=30, n_segments=600, mask=mask)
 
         labels2 = self.cut(img, labels1, thresh)
@@ -42,9 +42,11 @@ class AutoColorDetector:
         maxIdx = None
 
         new_labels = np.zeros(labels.shape, np.uint8)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
 
         segs = []
+        csegs = []
         masks = []
 
         unique, counts = np.unique(labels, return_counts=True)
@@ -59,12 +61,15 @@ class AutoColorDetector:
                 mask[labels==unq] = 255
 
                 cut = cv2.bitwise_and(gray,gray,mask = mask)
+                ccut = cv2.bitwise_and(hsv,hsv,mask = mask)
+                hue, _, _ = cv2.split(ccut)
 
                 masks.append(mask)
                 segs.append(cut)
+                csegs.append(hue)
 
 
-        return new_labels, segs, masks
+        return new_labels, segs, csegs, masks
 
     def textureFeatures(self, segs):
 
@@ -117,11 +122,11 @@ class AutoColorDetector:
         labels = None
 
         labels = self.segmentRAG(blur, thresh, mask=mask)
-        labels, segs, masks = self.filterSegments(image, labels, image.shape[0]*image.shape[1] / 600)
+        labels, segs, csegs, masks = self.filterSegments(image, labels, image.shape[0]*image.shape[1] / 600)
 
         tx_fts = self.textureFeatures(segs)
         # shp_fts = self.shapeFeatures(masks)
-        clr_fts = self.colorFeatures(segs, masks)
+        clr_fts = self.colorFeatures(csegs, masks)
 
         fts = np.hstack((tx_fts, clr_fts))
 
