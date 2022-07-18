@@ -8,6 +8,7 @@ from skimage import data, segmentation, color
 from skimage.future import graph
 import os
 import sys
+import argparse
 from tensorflow import keras
 import pickle
 import autoColorDetection as acd
@@ -50,7 +51,11 @@ model = keras.models.load_model('models/model3')
 scaler = pickle.load(open('models/scaler3.pkl','rb'))
 colorDetector = acd.AutoColorDetector()
 
-prefix = "test_imgs/"
+parser = argparse.ArgumentParser()
+parser.add_argument("building", help="Path to a subfolder in test_imgs")
+args = parser.parse_args()
+
+prefix = "test_imgs/{}/".format(args.building)
 
 bld_count = 1
 while True:
@@ -75,6 +80,7 @@ while True:
 
                 copy = current.copy()
                 # copy = cv2.resize(copy, (2*copy.shape[1], 2*copy.shape[0]))
+                num_match = 0
 
                 for i in range(len(masks1)):
                     for j in range(len(masks2)):
@@ -83,8 +89,9 @@ while True:
                             continue
 
                         testFts = np.hstack((fts1[i], fts2[j]))
+                        pr = predict(testFts)
 
-                        if predict(testFts):
+                        if pr:
 
                             red = np.zeros((masks2[j].shape[0], masks2[j].shape[1], 3), dtype=np.uint8)
                             red[masks2[j] == 255] = (0,0,255)
@@ -100,8 +107,19 @@ while True:
                             # showHSV(img2,2)
                             #
                             # cv2.waitKey()
-                cv2.imshow("sample", sample)
-                cv2.imshow("copy", copy)
+                            num_match += 1
+
+
+
+                if num_match > 3:
+                    copy = cv2.putText(copy, 'Match', (50,50), cv2.FONT_HERSHEY_SIMPLEX, \
+                                       1, (0,255,0), 2, cv2.LINE_AA)
+                else:
+                    copy = cv2.putText(copy, 'No match', (50,50), cv2.FONT_HERSHEY_SIMPLEX, \
+                                       1, (0,0,255), 2, cv2.LINE_AA)
+
+                cv2.imshow("reference", sample)
+                cv2.imshow("observation", copy)
                 cv2.waitKey()
 
             else:
