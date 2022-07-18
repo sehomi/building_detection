@@ -7,10 +7,10 @@ Also, the success rate of overall entrance mission is found to be 13 out of 15 i
 
 ## Python Requirements
 
-tensorflow
-skimage
-cv2
-matplotlib
+- tensorflow
+- skimage
+- cv2
+- matplotlib
 
 ## Testing
 
