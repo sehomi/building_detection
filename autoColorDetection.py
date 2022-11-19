@@ -36,7 +36,7 @@ class AutoColorDetector:
 
         return labels2
 
-    def filterSegments(self, image, labels, segThresh):
+    def filterSegments(self, image, labels, region, segThresh):
 
         maxArea = 0
         maxIdx = None
@@ -56,14 +56,18 @@ class AutoColorDetector:
                 continue
 
             if counts[i] > 3*segThresh:
-                new_labels[labels==unq] = unq
                 mask = np.zeros(labels.shape, np.uint8)
                 mask[labels==unq] = 255
+
+                out_of_bounds = np.sum( cv2.bitwise_and(region,mask) ) > 0
+                if out_of_bounds:
+                    continue
 
                 cut = cv2.bitwise_and(gray,gray,mask = mask)
                 ccut = cv2.bitwise_and(hsv,hsv,mask = mask)
                 hue, _, _ = cv2.split(ccut)
 
+                new_labels[labels==unq] = unq
                 masks.append(mask)
                 segs.append(cut)
                 csegs.append(hue)
@@ -122,7 +126,7 @@ class AutoColorDetector:
         labels = None
 
         labels = self.segmentRAG(blur, thresh, mask=mask)
-        labels, segs, csegs, masks = self.filterSegments(image, labels, image.shape[0]*image.shape[1] / 600)
+        labels, segs, csegs, masks = self.filterSegments(image, labels, 255-mask, image.shape[0]*image.shape[1] / 600)
 
         tx_fts = self.textureFeatures(segs)
         # shp_fts = self.shapeFeatures(masks)
