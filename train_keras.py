@@ -24,7 +24,7 @@ mpl.rcParams['figure.figsize'] = (12, 10)
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-data = np.loadtxt("dataset/association/features/data3.csv", delimiter=",")
+data = np.loadtxt("dataset/association/features/data4.csv", delimiter=",")
 
 train_data, test_data = train_test_split(data, test_size=0.2)
 train_data, val_data = train_test_split(train_data, test_size=0.2)
@@ -41,7 +41,7 @@ testX = np.array(test_data[:,0:16])
 scaler = StandardScaler()
 trainX = scaler.fit_transform(trainX)
 
-pickle.dump(scaler, open('models/scaler4.pkl','wb'))
+pickle.dump(scaler, open('models/scaler5.pkl','wb'))
 
 valX = scaler.transform(valX)
 testX = scaler.transform(testX)
@@ -238,6 +238,6 @@ for name, value in zip(model.metrics_names, baseline_results):
   print(name, ': ', value)
 print()
 
-model.save('models/model4')
+model.save('models/model5')
 
 plt.show()
