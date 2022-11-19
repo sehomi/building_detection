@@ -9,6 +9,7 @@ from skimage.future import graph
 import os
 import sys
 import json
+import pickle
 sys.path.append("/home/hojat/Desktop/building_detection")
 import autoColorDetection as acd
 
@@ -84,6 +85,8 @@ manual_data_file = 'processed_manual.json'
 
 if not os.path.isfile(manual_data_file):
 
+    print('##### Annotating Data #####')
+
     images = {'blds':[]}
 
     bld_count = 1
@@ -124,6 +127,9 @@ if not os.path.isfile(manual_data_file):
          convert_file.write(json.dumps(images))
 
 else:
+
+    print('##### Loading Annotated Data #####')
+
     with open('processed_manual.json') as json_file:
         images = json.load(json_file)
 
@@ -137,8 +143,8 @@ else:
         blue[bld['ref_mask'] == 255] = (255,0,0)
         copy = cv2.addWeighted(bld['ref'], 1, blue, 0.4, 0.0)
 
-        cv2.imshow('img', copy)
-        cv2.waitKey(5000)
+        cv2.imshow('review', copy)
+        cv2.waitKey(200)
 
 
         for c_obs in range(len(bld['observations'])):
@@ -151,65 +157,85 @@ else:
             blue[obs['obs_mask'] == 255] = (255,0,0)
             copy = cv2.addWeighted(obs['obs'], 1, blue, 0.4, 0.0)
 
-            cv2.imshow('img', copy)
-            cv2.waitKey(5000)
+            cv2.imshow('review', copy)
+            cv2.waitKey(200)
+
+cv2.destroyAllWindows()
 
 features = []
 
-print('##### Extracting Features #####')
+features_file = 'features.pickle'
 
-colorDetector = acd.AutoColorDetector()
+if not os.path.isfile(features_file):
+
+    print('##### Extracting Features #####')
+
+    colorDetector = acd.AutoColorDetector()
+    fig, ax = plt.subplots(2)
+
+    for c_bld in range(len(images['blds'])):
+
+        print('building number {:d}'.format(c_bld))
+
+        bld = images['blds'][c_bld]
+
+        sample = bld['ref'].copy()
+        mask = bld['ref_mask'].copy()
+        labels_ref, masks_ref, fts_ref = colorDetector.detectBuildingColor(sample, mask=mask)
+        labels_ref_neg, masks_ref_neg, fts_ref_neg = colorDetector.detectBuildingColor(sample, mask=255-mask)
+
+        features.append([])
+        features[-1].append({'len_positive':len(masks_ref), 'len_negative':len(masks_ref_neg), 'positive': fts_ref, 'negative': fts_ref_neg})
+
+        if labels_ref.any() != None:
+
+            out = color.label2rgb(labels_ref, sample, kind='overlay', bg_label=0)
+
+            ax[0].imshow(out)
+            ax[0].set_axis_off()
+
+        for c_obs in range(len(bld['observations'])):
+
+            print('\tobservation {:d}'.format(c_obs))
+
+            obs = bld['observations'][c_obs]
+
+            current = obs['obs'].copy()
+            mask = obs['obs_mask'].copy()
+            labels_obs, masks_obs, fts_obs = colorDetector.detectBuildingColor(current, mask=mask)
+            labels_obs_neg, masks_obs_neg, fts_obs_neg = colorDetector.detectBuildingColor(current, mask=255-mask)
+
+            features[-1].append({'len_positive':len(masks_obs), 'len_negative':len(fts_obs_neg), 'positive': fts_obs, 'negative': fts_obs_neg})
+
+            if labels_obs.any() != None:
+
+                out = color.label2rgb(labels_obs, current, kind='overlay', bg_label=0)
+
+                ax[1].imshow(out)
+                ax[1].set_axis_off()
+
+                # plt.show()
+
+    with open('features.pickle', 'wb') as output_file:
+        pickle.dump(features, output_file)
+
+else:
+
+    print('##### Loading Features #####')
+
+    with open('features.pickle', 'rb') as input_file:
+        features = pickle.load(input_file)
+
+
+print('##### Pairing Features #####')
+
 data = []
-fig, ax = plt.subplots(2)
-
-for c_bld in range(len(images['blds'])):
-
-    print('building number {:d}'.format(c_bld))
-
-    bld = images['blds'][c_bld]
-
-    sample = bld['ref'].copy()
-    mask = bld['ref_mask'].copy()
-    labels, masks_ref, fts_ref = colorDetector.detectBuildingColor(sample, mask=mask)
-    labels, masks_ref_neg, fts_ref_neg = colorDetector.detectBuildingColor(sample, mask=255-mask)
-
-    features.append([])
-    features[-1].append({'len_positive':len(masks_ref), 'len_negative':len(masks_ref_neg), 'positive': fts_ref, 'negative': fts_ref_neg})
-
-    if labels.any() != None:
-
-        out = color.label2rgb(labels, sample, kind='overlay', bg_label=0)
-
-        ax[0].imshow(out)
-        ax[0].set_axis_off()
-
-    for c_obs in range(len(bld['observations'])):
-
-        print('\tobservation {:d}'.format(c_obs))
-
-        obs = bld['observations'][c_obs]
-
-        current = obs['obs'].copy()
-        mask = obs['obs_mask'].copy()
-        labels, masks_obs, fts_obs = colorDetector.detectBuildingColor(current, mask=mask)
-        labels, masks_obs_neg, fts_obs_neg = colorDetector.detectBuildingColor(current, mask=255-mask)
-
-        features[-1].append({'len_positive':len(masks_obs), 'len_negative':len(fts_obs_neg), 'positive': fts_obs, 'negative': fts_obs_neg})
-
-        if labels.any() != None:
-
-            out = color.label2rgb(labels, current, kind='overlay', bg_label=0)
-
-            ax[1].imshow(out)
-            ax[1].set_axis_off()
-
-            plt.show()
 
 for i in range(len(features)):
 
     for j in range(len(features[i])):
 
-        for k in range(j,len(features[k])):
+        for k in range(j,len(features[i])):
 
             if j == k: continue
 
@@ -241,7 +267,7 @@ for i in range(len(features)):
             for i1 in range(len_1_neg):
                 for i2 in range(len_2_neg):
                     d1 = fts_1_neg[i1]
-                    d2 = fts_1_neg[i2]
+                    d2 = fts_2_neg[i2]
 
                     if d1 is not None and d2 is not None:
                         falseFts = np.hstack((d1, d2))
@@ -250,7 +276,7 @@ for i in range(len(features)):
             for i1 in range(len_1_pos):
                 for i2 in range(len_2_neg):
                     d1 = fts_1_pos[i1]
-                    d2 = fts_1_neg[i2]
+                    d2 = fts_2_neg[i2]
 
                     if d1 is not None and d2 is not None:
                         falseFts = np.hstack((d1, d2))
@@ -266,76 +292,3 @@ for i in range(len(features)):
                         data.append( np.hstack( (falseFts,np.array([0])) ))
 
 np.savetxt("features/data.csv", data, delimiter=",")
-
-# while True:
-#     sample_file_name = "raw/bld{:d}_0.jpg".format(bld_count)
-#     if os.path.isfile(sample_file_name):
-#         sample = cv2.imread(sample_file_name, cv2.COLOR_BGR2RGB)
-#         sample = resizeImg(sample, 600, 800)
-#
-#         mask = defineWalls(sample)
-#
-#         labels, masks1, fts1 = colorDetector.detectBuildingColor(sample, mask=255-mask)
-#         if labels.any() != None:
-#
-#             out = color.label2rgb(labels, sample, kind='overlay', bg_label=0)
-#
-#             ax[0].imshow(out)
-#             ax[0].set_axis_off()
-#
-#         bld_count1 = 1
-#         while True:
-#
-#             current_file_name = "raw/bld{:d}_{:d}.jpg".format(bld_count, bld_count1)
-#             if os.path.isfile(current_file_name):
-#                 current = cv2.imread(current_file_name, cv2.COLOR_BGR2RGB)
-#                 current = resizeImg(current, 600, 800)
-#
-#                 mask = defineWalls(current)
-#
-#                 labels, masks2, fts2 = colorDetector.detectBuildingColor(current, mask=255-mask)
-#                 if labels.any() != None:
-#
-#                     out = color.label2rgb(labels, current, kind='overlay', bg_label=0)
-#
-#                     ax[1].imshow(out)
-#                     ax[1].set_axis_off()
-#
-#                     plt.draw()
-#
-#                     pairs = []
-#                     for i1 in range(len(masks1)):
-#                         for i2 in range(len(masks2)):
-#                             d1 = fts1[i1]
-#                             d2 = fts2[i2]
-#
-#                             if d1 is not None and d2 is not None:
-#                                 trueFts = np.hstack((d1, d2))
-#                                 data.append( np.hstack( (trueFts,np.array([1])) ))
-#                                 pairs.append([i1,i2])
-#
-#
-#                     # next = False
-#                     #
-#                     # for i in range(len(masks1)):
-#                     #     for j in range(len(masks2)):
-#                     #
-#                     #         if [i,j] in pairs or [j,i] in pairs:
-#                     #             continue
-#                     #
-#                     #         falseFts = np.hstack((fts1[i], fts2[j]))
-#                     #         data.append( np.hstack( (falseFts,np.array([0])) ))
-#                     #         pairs.append([i,j])
-#
-#                     print(data)
-#                     np.savetxt("features/data.csv", data, delimiter=",")
-#             else:
-#                 break
-#             bld_count1 = bld_count1 + 1
-#
-#     else:
-#         break
-#
-#     bld_count = bld_count + 1
-#
-# np.savetxt("features/data.csv", data, delimiter=",")
