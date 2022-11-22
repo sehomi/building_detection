@@ -81,6 +81,7 @@ def plot_loss(history, label, n):
   plt.ylabel('Loss')
 
   plt.legend()
+  plt.savefig('loss.pdf', format='PDF')
 
 def plot_roc(name, labels, predictions, **kwargs):
   fp, tp, _ = sklearn.metrics.roc_curve(labels, predictions)
@@ -93,6 +94,8 @@ def plot_roc(name, labels, predictions, **kwargs):
   plt.grid(True)
   ax = plt.gca()
   ax.set_aspect('equal')
+
+  plt.savefig('roc.pdf', format='PDF')
 
 
 def plot_metrics(history):
@@ -116,6 +119,8 @@ def plot_metrics(history):
     plt.legend()
     plt.grid()
 
+    plt.savefig('metrics_{}.pdf'.format(name), format='PDF')
+
 def plot_cm(labels, predictions, p=0.5):
   cm = confusion_matrix(labels, predictions > p)
   plt.figure(figsize=(5,5))
@@ -129,6 +134,8 @@ def plot_cm(labels, predictions, p=0.5):
   print('Fraudulent Transactions Missed (False Negatives): ', cm[1][0])
   print('Fraudulent Transactions Detected (True Positives): ', cm[1][1])
   print('Total Fraudulent Transactions: ', np.sum(cm[1]))
+
+  plt.savefig('cm.pdf', format='PDF')
 
 
 def make_model(metrics = METRICS, output_bias=None):
@@ -220,15 +227,15 @@ baseline_history = model.fit(
 
 
 
-# plot_loss(baseline_history, "", 0)
+plot_loss(baseline_history, "", 0)
 plot_metrics(baseline_history)
 
 test_predictions_baseline = model.predict(testX, batch_size=BATCH_SIZE)
 train_predictions_baseline = model.predict(trainX, batch_size=BATCH_SIZE)
 
 plot_cm(testy, test_predictions_baseline)
-# plot_roc("Train Baseline", trainy, train_predictions_baseline, color=colors[0])
-# plot_roc("Test Baseline", testy, test_predictions_baseline, color=colors[0], linestyle='--')
+plot_roc("Train Baseline", trainy, train_predictions_baseline, color=colors[0])
+plot_roc("Test Baseline", testy, test_predictions_baseline, color=colors[0], linestyle='--')
 plt.legend(loc='lower right')
 
 
@@ -239,5 +246,3 @@ for name, value in zip(model.metrics_names, baseline_results):
 print()
 
 model.save('models/model5')
-
-plt.show()
